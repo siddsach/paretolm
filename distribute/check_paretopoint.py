@@ -4,10 +4,24 @@ import time
 import math
 import urllib2
 import matplotlib as plt
+from __future__ import print_function
+import mimetypes
+import os
+import sys
+from functools import partial
+from uuid import uuid4
+try:
+    from urllib.parse import quote
+except ImportError:
+    from urllib import quote
+
+from tornado import gen, httpclient, ioloop
+from tornado.options import define, options
+
+
 
 parser = argparse.ArgumentParser(description='Submit your model/check the pareto point through http')
                     
-
 # three components must submit                    
 parser.add_argument('--model', type=str, default='./checkpoint/',
                     help='type of recurrent net (RNN_TANH, RNN_RELU, LSTM, GRU)')
@@ -29,12 +43,50 @@ parser.add_argument('--student_id', type=str, default='104416XX',
 args = parser.parse_args()
 
 
+########################################################### Http submision utils ###################################
+@gen.coroutine
+def multipart_producer(boundary, filenames, write):
+    boundary_bytes = boundary.encode()
+
+    for filename in filenames:
+        filename_bytes = filename.encode()
+        mtype = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+        buf = (
+            (b'--%s\r\n' % boundary_bytes) +
+            (b'Content-Disposition: form-data; name="%s"; filename="%s"\r\n' %
+             (filename_bytes, filename_bytes)) +
+            (b'Content-Type: %s\r\n' % mtype.encode()) +
+            b'\r\n'
+        )
+        yield write(buf)
+        with open(filename, 'rb') as f:
+            while True:
+                # 16k at a time.
+                chunk = f.read(16 * 1024)
+                if not chunk:
+                    break
+                yield write(chunk)
+
+        yield write(b'\r\n')
+
+    yield write(b'--%s--\r\n' % (boundary_bytes,))
+
+@gen.coroutine
+def post(filenames, id_info):
+    client = httpclient.AsyncHTTPClient()
+    boundary = uuid4().hex
+    headers = {'Content-Type': 'multipart/form-data; boundary=%s' % boundary}
+    producer = partial(multipart_producer, boundary, filenames)
+    response = yield client.fetch('htttp://128.135.8.238/dl/upload',
+                                  method='POST',
+                                  headers=headers,
+                                  body_producer=producer)
+
+    print(response)
+
+
 def submit_current_model():
     
-    fp = open(args.model, "rb")
-    model = fp.read()
-    fp.close()
-
     pseudonym = args.pseudonym
     name = args.name
     student_id = args.student_id
@@ -42,8 +94,8 @@ def submit_current_model():
     model_module = args.model_module
     main_module = args.main_module
 
-    # submit it through the htttp post request
-
+    submissions = [args.main_module, args.model_module, args.model]
+    ioloop.IOLoop.current().run_sync(lambda: post(submissions))
 
 def fetch_current_status():
 
