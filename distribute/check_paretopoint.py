@@ -28,6 +28,8 @@ parser.add_argument('--model_module', type=str, default='model.py',
                     help='your python file "model.py" ')
 parser.add_argument('--main_module', type=str, default='main.py',
                     help='your python file "main.py"')
+parser.add_argument('--time_ratio', type=float, default=1.0,
+                    help='time ratio compared with baseline')
 
 # fake identity for pareto point display only
 parser.add_argument('--pseudonym', type=str, default='',

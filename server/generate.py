@@ -21,8 +21,6 @@ parser.add_argument('--outf', type=str, default='generated.txt',
                     help='output file for generated text')
 parser.add_argument('--words', type=int, default='1000',
                     help='number of words to generate')
-parser.add_argument('--cuda', action='store_true',
-                    help='use CUDA')
 parser.add_argument('--temperature', type=float, default=1.0,
                     help='temperature - higher will increase diversity')
 
@@ -34,19 +32,12 @@ if args.temperature < 1e-3:
 with open(args.checkpoint, 'rb') as f:
     model = torch.load(f)
 model.eval()
-
-if args.cuda:
-    model.cuda()
-else:
-    model.cpu()
+model.cpu()
 
 corpus = data.Corpus(args.data)
 ntokens = len(corpus.dictionary)
 hidden = model.init_hidden(1)
 input = Variable(torch.rand(1, 1).mul(ntokens).long(), volatile=True)
-if args.cuda:
-    input.data = input.data.cuda()
-
 with open(args.outf, 'w') as outf:
     for i in range(args.words):
         output, hidden = model(input, hidden)

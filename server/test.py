@@ -15,9 +15,6 @@ parser.add_argument('--checkpoint', type=str, default='./model/',
                     help='trained recurrent net')
 parser.add_argument('--bptt', type=int, default=35,
                     help='sequence length')
-parser.add_argument('--cuda', action='store_true',
-                    help='use CUDA')
-
 parser.add_argument('--result', type=str, default='',
                     help='result saving file')
 
@@ -49,8 +46,6 @@ def batchify(data, bsz):
     data = data.narrow(0, 0, nbatch * bsz)
     # Evenly divide the data across the bsz batches.
     data = data.view(bsz, -1).t().contiguous()
-    if args.cuda:
-        data = data.cuda()
     return data
 
 eval_batch_size = 10
@@ -66,8 +61,6 @@ ntokens = len(corpus.dictionary)
 # Load the best saved model.
 with open(args.checkpoint, 'rb') as f:
     model = torch.load(f)
-if args.cuda:
-    model.cuda()
 
 criterion = nn.CrossEntropyLoss()
 
