@@ -3,7 +3,7 @@ import argparse
 import time
 import math
 import urllib2
-import matplotlib as plt
+import matplotlib.pyplot as plt
 from __future__ import print_function
 import mimetypes
 import os
@@ -17,31 +17,29 @@ except ImportError:
 
 from tornado import gen, httpclient, ioloop
 from tornado.options import define, options
+import json
 
-
-
-parser = argparse.ArgumentParser(description='Submit your model/check the pareto point through http')
+parser = argparse.ArgumentParser(description='Submit your model/check the pareto point through http protocol')
                     
 # three components must submit                    
-parser.add_argument('--model', type=str, default='./checkpoint/',
-                    help='type of recurrent net (RNN_TANH, RNN_RELU, LSTM, GRU)')
+parser.add_argument('--model', type=str, default='./checkpoint/model.pt',
+                    help='your trained model')
 parser.add_argument('--model_module', type=str, default='model.py',
-                    help='type of recurrent net (RNN_TANH, RNN_RELU, LSTM, GRU)')
+                    help='your python file "model.py" ')
 parser.add_argument('--main_module', type=str, default='main.py',
-                    help='type of recurrent net (RNN_TANH, RNN_RELU, LSTM, GRU)')
+                    help='your python file "main.py"')
 
 # fake identity for pareto point display only
-parser.add_argument('--pseudonym', type=str, default='./checkpoint/',
-                    help='type of recurrent net (RNN_TANH, RNN_RELU, LSTM, GRU)')
+parser.add_argument('--pseudonym', type=str, default='',
+                    help='pseudonym for display purpose')
 # real identity information
-parser.add_argument('--name', type=str, default='haiwang',
-                    help='type of recurrent net (RNN_TANH, RNN_RELU, LSTM, GRU)')
+parser.add_argument('--name', type=str, default='',
+                    help='your real name')
 parser.add_argument('--student_id', type=str, default='104416XX',
-                    help='type of recurrent net (RNN_TANH, RNN_RELU, LSTM, GRU)')
+                    help='your student id')
 
 
 args = parser.parse_args()
-
 
 ########################################################### Http submision utils ###################################
 @gen.coroutine
@@ -77,20 +75,21 @@ def post(filenames, id_info):
     boundary = uuid4().hex
     headers = {'Content-Type': 'multipart/form-data; boundary=%s' % boundary}
     producer = partial(multipart_producer, boundary, filenames)
-    response = yield client.fetch('htttp://128.135.8.238/dl/upload',
+    response = yield client.fetch('htttp://128.135.8.238/upload',
                                   method='POST',
                                   headers=headers,
                                   body_producer=producer)
 
     print(response)
 
+########################################################### Display & Submission Function ###################################
 
-def submit_current_model():
-    
+def submit_current_model():    
+    # submit the identity information
     pseudonym = args.pseudonym
     name = args.name
     student_id = args.student_id
-
+    # submit the file
     model_module = args.model_module
     main_module = args.main_module
 
@@ -99,14 +98,24 @@ def submit_current_model():
 
 def fetch_current_status():
 
-    req = urllib2.Request(url='htttp://128.135.8.238/dl')
-    f = urllib2.urlopen(req)
-    status = f.read()
+    http_client = httpclient.HTTPClient()
+    try:
+        response = http_client.fetch('htttp://128.135.8.238/Paretopoint')
+        print(response.body)
+    except httpclient.HTTPError as e:
+        print("Error:", e)
+    http_client.close()
 
+    # write it as dict
+    with open('paretopoint.json') as f:
+        f.write(response.body)
+
+
+    # read current status and display it
+    status = json.load('paretopoint.json')
     plt.ylabel('Perplexity')
     plt.xlabel('Ratio: Training Time/Baseline time')
     plt.axis([0, 10, 0, 300])
-
     all_points_x = []
     all_points_y = []
     labels = []
@@ -131,11 +140,7 @@ def main():
     print("1: check current paretopoint and display it\n")
     option = input("Type your choice: ")
     if option == 0:
-        response = submit_current_model()
-        if response:
-            print("Submission accepted")
-        else:
-            print("Submission not accepted")
+        submit_current_model()
     else:
         fetch_current_status()        
     

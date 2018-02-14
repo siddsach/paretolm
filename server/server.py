@@ -20,7 +20,7 @@ try:
 except ImportError:
     # Python 2.
     from urllib import unquote
-
+import time
 
 #### Use this to configure the service
 
@@ -88,10 +88,13 @@ class UploadModelHandler(tornado.web.RequestHandler):
                     trial = id
 
 
-        # folder/studentid/__trial  
+        # folder/studentid/__trial, model&main is used for checking the code, not run it.
         model_name = "./uploads/%s_%s/model_%d.py" % (email_address, student_id, trial)
         main_name = "./uploads/%s_%s/main_%d.py" % (email_address, student_id, trial)
+        
+        # model is used to test the performance
         checkpoint_name = "./uploads/%s_%s/checkpoint_%d.pt" % (email_address, student_id, trial)
+        with open(checkpoint_name, 'wb+') as fp: 
 
         with open(model_name, 'wt+') as fp: 
             fp.write(model_module) 
@@ -99,35 +102,41 @@ class UploadModelHandler(tornado.web.RequestHandler):
         with open(main_name, 'wt+') as fp: 
             fp.write(main_module) 
 
-        with open(checkpoint_name, 'wb+') as fp: 
             fp.write(check_point) 
  
         print(".. saving the uploads done") 
 
-
-        # now call the shell to run it to make sure it's working         
-        
-        cmd_eval = "python %s " % main_name
-        cmd_gen = "python %s " % main_name
+        # now call the shell to run it to make sure it's working
+        cmd_eval = "python %s/test.py --model %s --result %s/perp_%d.json" % (folder, checkpoint_name, folder, trial)
+        cmd_gen = "python %s/generate.py --model %s --result %s/gen_%d.txt" % (folder, checkpoint_name, folder, trial)
         os.system.command(cmd_eval)
         os.system.command(cmd_gen)
         
         # check the running is ok
-        if not os.path.exists():
-            login_response = "{'error': true, 'msg': 'Thank you, but the model running failed, please check your submission'}"
-            self.write(json.dumps(login_response))
-            return 
+        start_time = time.time()
+        while True:
 
+            if os.path.exists("%s/perp_%d.json"%(folder, trial)) and os.path.exists("%s/gen_%d.txt"%(folder, trial)):
+                break
+            # check every 5 seconds
+            time.sleep(5)
+            end_time = time.time()
+            # maximum waiting for 5 minutes
+            if end_time - start_time >= 1000:
+                login_response = "{'error': true, 'msg': 'Thank you, but the model running failed, please check your submission'}"
+                self.write(json.dumps(login_response))
+                return 
 
+        # load the local statistics
+        curt_sub = json.load("%s/perp_%d.json"%(folder, trial))
         # updates the global paretopoint and save it
         paretopoint = json.load(Paretopoint)
-        paretopoint[pseudonym + ":::" + str(trial)] = [perplexity, time_ratio]
+        paretopoint[pseudonym + ":::" + str(trial)] = [curt_sub['valid_perp'], time_ratio]
         json.dump(paretopoint, Paretopoint)
-
 
         # updates the private paretopoint and save it (only for grading purpose)
         aretopoint_private = json.load(Paretopoint_private)
-        paretopoint_private[name + "_" + student_id + "_" + str(trial)] = [perplexity, time_ratio]
+        paretopoint_private[name + "_" + student_id + "_" + str(trial)] = [curt_sub['valid_loss'], curt_sub['valid_perp'], curt_sub['test_loss'], curt_sub['test_perp'], time_ratio]
         json.dump(paretopoint_private, Paretopoint_private)
 
         # if submission accepted
@@ -141,7 +150,6 @@ class ParetopointHandler(tornado.web.RequestHandler):
 
         print('-----------------------') 
         print('Request to get the Paretopoint') 
- 
         self.set_header("Content-Type", "application/json") 
         ret = [{}] 
         ret[0]['Paretopoint'] = '' 

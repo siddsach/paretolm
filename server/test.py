@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import data
+import json
 
 parser = argparse.ArgumentParser(description='PyTorch Wikitext-2 RNN/LSTM Language Model')
 parser.add_argument('--data', type=str, default='./data/wikitext-2',
@@ -16,6 +17,10 @@ parser.add_argument('--bptt', type=int, default=35,
                     help='sequence length')
 parser.add_argument('--cuda', action='store_true',
                     help='use CUDA')
+
+parser.add_argument('--result', type=str, default='',
+                    help='result saving file')
+
 
 args = parser.parse_args()
 
@@ -115,13 +120,26 @@ def evaluate(data_source):
 # Run on valid data.
 valid_loss = evaluate(val_data)
 print('=' * 89)
-print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
+print('Test loss {:5.2f} | test ppl {:8.2f}'.format(
     valid_loss, math.exp(valid_loss)))
 print('=' * 89)
+
 
 # Run on test data.
 test_loss = evaluate(test_data)
 print('=' * 89)
-print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
+print('Test loss {:5.2f} | test ppl {:8.2f}'.format(
     test_loss, math.exp(test_loss)))
 print('=' * 89)
+
+
+# save the result to json
+result = {}
+result['valid_loss'] = valid_loss 
+result['test_loss'] = test_loss
+result['valid_perp'] =  math.exp(valid_loss)
+result['test_perp'] = math.exp(test_loss)
+
+fp = open(args.result, 'wt+')
+json.dump(result, fp)
+fp.close()
