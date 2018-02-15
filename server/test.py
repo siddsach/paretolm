@@ -115,7 +115,7 @@ def evaluate(data_source):
 # Run on valid data.
 valid_loss = evaluate(val_data)
 print('=' * 89)
-print('Valid loss {:5.2f} | valid ppl {:8.2f}'.format(
+print('Valid loss {:5.2f} | valid perplexity {:8.2f}'.format(
     valid_loss, math.exp(valid_loss)))
 print('=' * 89)
 
@@ -123,7 +123,7 @@ print('=' * 89)
 # Run on test data.
 test_loss = evaluate(test_data)
 print('=' * 89)
-print('Test loss {:5.2f} | test ppl {:8.2f}'.format(
+print('Test loss {:5.2f} | test perplexity {:8.2f}'.format(
     test_loss, math.exp(test_loss)))
 print('=' * 89)
 
