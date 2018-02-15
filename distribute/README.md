@@ -1,13 +1,13 @@
 # Word-level language modeling RNN
 
 This example trains a multi-layer RNN (Elman, GRU, or LSTM) on a language modeling task.
-By default, the training script uses the Wikitext-2 dataset, provided.
+By default, the training script uses the PTB dataset, provided.
 The trained model can then be used by the generate script to generate new text.
 
 ```bash
-python main.py --cuda         # Train a LSTM on Wikitext-2, reaching perplexity of 117.61
-python main.py --cuda --tied  # Train a tied LSTM on Wikitext-2, reaching perplexity of 110.44
-python main.py --cuda --epochs 40 --tied    # Train a tied LSTM on Wikitext-2 for 40 epochs, reaching perplexity of 87.17
+python main.py         # Train a LSTM on PTB, reaching perplexity of 128.55 and take about 1 hour in slurm.ttic.edu. This is the baseline in this final project
+python main.py --tied  # Train a tied LSTM on PTB
+python main.py --epochs 40 --tied    # Train a tied LSTM on PTB for 40 epochs
 python generate.py                      # Generate samples from the trained LSTM model.
 ```
 
@@ -34,7 +34,6 @@ optional arguments:
   --decay DECAY      learning rate decay per epoch
   --tied             tie the word embedding and softmax weights
   --seed SEED        random seed
-  --cuda             use CUDA
   --log-interval N   report interval
   --save SAVE        path to save the final model
 ```

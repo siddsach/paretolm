@@ -10,7 +10,7 @@ import torch
 from torch.autograd import Variable
 import data
 
-parser = argparse.ArgumentParser(description='PyTorch Wikitext-2 Language Model: given prefix, generate next word')
+parser = argparse.ArgumentParser(description='PyTorch PTB Language Model: given prefix, generate next word')
 
 # Model parameters.
 parser.add_argument('--data', type=str, default='./data/ptb',

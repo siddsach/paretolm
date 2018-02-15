@@ -9,7 +9,7 @@ from torch.autograd import Variable
 import data
 import model
 
-parser = argparse.ArgumentParser(description='Wikitext-2 RNN/LSTM Language Model: Main Function')
+parser = argparse.ArgumentParser(description='PTB RNN/LSTM Language Model: Main Function')
 parser.add_argument('--data', type=str, default='./data/ptb',
                     help='location of the data corpus')
 parser.add_argument('--model', type=str, default='LSTM',
@@ -24,7 +24,7 @@ parser.add_argument('--lr', type=float, default=20,
                     help='initial learning rate')
 parser.add_argument('--clip', type=float, default=0.25,
                     help='gradient clipping')
-parser.add_argument('--epochs', type=int, default=6,
+parser.add_argument('--epochs', type=int, default=5,
                     help='upper epoch limit')
 parser.add_argument('--batch_size', type=int, default=32, metavar='N',
                     help='batch size')
