@@ -26,7 +26,7 @@ class Corpus(object):
         self.test = self.tokenize(os.path.join(path, 'test.txt'))
         
         # now we use the in-house test
-        self.test = self.tokenize_withoutadd(os.path.join(path, 'inhouse_test.txt'))
+        #self.test = self.tokenize_withoutadd(os.path.join(path, 'test.txt'))
 
     def tokenize(self, path):
         """Tokenizes a text file."""

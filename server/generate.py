@@ -10,10 +10,10 @@ import torch
 from torch.autograd import Variable
 import data
 
-parser = argparse.ArgumentParser(description='PyTorch Wikitext-2 Language Model')
+parser = argparse.ArgumentParser(description='PyTorch PTB Language Model: given prefix, generate next word')
 
 # Model parameters.
-parser.add_argument('--data', type=str, default='./data/wikitext-2',
+parser.add_argument('--data', type=str, default='./data/ptb',
                     help='location of the data corpus')
 parser.add_argument('--checkpoint', type=str, default='./model.pt',
                     help='model checkpoint to use')
@@ -31,6 +31,7 @@ if args.temperature < 1e-3:
 
 with open(args.checkpoint, 'rb') as f:
     model = torch.load(f)
+
 model.eval()
 model.cpu()
 
@@ -38,7 +39,8 @@ corpus = data.Corpus(args.data)
 ntokens = len(corpus.dictionary)
 hidden = model.init_hidden(1)
 input = Variable(torch.rand(1, 1).mul(ntokens).long(), volatile=True)
-with open(args.outf, 'w') as outf:
+
+with open(args.outf, 'wt+') as outf:
     for i in range(args.words):
         output, hidden = model(input, hidden)
         word_weights = output.squeeze().data.div(args.temperature).exp().cpu()

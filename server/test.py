@@ -9,13 +9,13 @@ import data
 import json
 
 parser = argparse.ArgumentParser(description='PyTorch Wikitext-2 RNN/LSTM Language Model')
-parser.add_argument('--data', type=str, default='./data/wikitext-2',
+parser.add_argument('--data', type=str, default='./data/ptb',
                     help='location of the data corpus')
-parser.add_argument('--checkpoint', type=str, default='./model/',
+parser.add_argument('--checkpoint', type=str, default='model.pt',
                     help='trained recurrent net')
 parser.add_argument('--bptt', type=int, default=35,
                     help='sequence length')
-parser.add_argument('--result', type=str, default='',
+parser.add_argument('--result', type=str, default='haiwang.json',
                     help='result saving file')
 
 
@@ -61,6 +61,8 @@ ntokens = len(corpus.dictionary)
 # Load the best saved model.
 with open(args.checkpoint, 'rb') as f:
     model = torch.load(f)
+
+model.cpu()
 
 criterion = nn.CrossEntropyLoss()
 
@@ -113,7 +115,7 @@ def evaluate(data_source):
 # Run on valid data.
 valid_loss = evaluate(val_data)
 print('=' * 89)
-print('Test loss {:5.2f} | test ppl {:8.2f}'.format(
+print('Valid loss {:5.2f} | valid ppl {:8.2f}'.format(
     valid_loss, math.exp(valid_loss)))
 print('=' * 89)
 
