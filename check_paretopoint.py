@@ -129,7 +129,9 @@ def fetch_current_status():
         f.write(response.body)
 
     # read current status and display it to the paretopoint.png
-    status = json.load('paretopoint.json')
+    fp = open('paretopoint.json', 'r')
+    status = json.load(fp)
+    fp.close()
     plt.ticklabel_format(useOffset=False)
     plt.axis([0, 1, 0, 150])
     all_points_x = []
