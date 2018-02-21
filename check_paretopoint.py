@@ -71,6 +71,7 @@ def multipart_producer(boundary, filenames, write):
 def post(filenames, pseudonym, name, student_id):
 
     client = httpclient.AsyncHTTPClient()
+    client.configure(None, defaults=dict(connect_timeout=2000, request_timeout=3000))
     boundary = uuid4().hex
     headers = {'Content-Type': 'multipart/form-data; boundary=%s' % boundary}
     producer = partial(multipart_producer, boundary, filenames)
