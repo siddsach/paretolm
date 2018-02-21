@@ -1,0 +1,12 @@
+1: install all the necessary library such as  matplotlib , tornado
+2: check_paretopoint contains three functions: submit current status, fetch current status, submit your final model
+submit current status and fetch current status are used when you tune your model
+
+after fetch current status, the result is saved in "paretopoint.png"
+
+submit your final model is used only when you are ready for the final submission, the final submission will be used for grading.
+In the final submission, please submit the following information: 
+student_id, yours name (without " " between family name and given name, say change "hai wang" to "hai_wang" ).
+your model.py, your main.py, your final trained model. 
+Please rename your file exactly the same as it was in repo and make your code runable, don't use model_XX.py etc.
+We will automatically run the submitted code in various way, so it's your responsibility to make sure the code is runable and totally compatible with original code in repo.  
