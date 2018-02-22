@@ -141,8 +141,8 @@ def fetch_current_status():
     labels = []
     for key in status.keys():
         labels.append(key)
-        all_points_x.append(status[key][0])
-        all_points_y.append(status[key][1])
+        all_points_y.append(status[key][0])
+        all_points_x.append(status[key][1])
 
     fig, ax = plt.subplots()
     ax.scatter(all_points_x, all_points_y)
