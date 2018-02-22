@@ -21,13 +21,13 @@ parser.add_argument('--nhid', type=int, default=200,
                     help='number of hidden units per layer')
 parser.add_argument('--nlayers', type=int, default=2,
                     help='number of layers')
-parser.add_argument('--lr', type=float, default=20,
+parser.add_argument('--lr', type=float, default=40,
                     help='initial learning rate')
 parser.add_argument('--clip', type=float, default=0.25,
                     help='gradient clipping')
 parser.add_argument('--epochs', type=int, default=5,
                     help='upper epoch limit')
-parser.add_argument('--batch_size', type=int, default=20, metavar='N',
+parser.add_argument('--batch_size', type=int, default=40, metavar='N',
                     help='batch size')
 parser.add_argument('--bptt', type=int, default=35,
                     help='sequence length')
@@ -51,7 +51,10 @@ torch.manual_seed(args.seed)
 # Load data
 ###############################################################################
 
-corpus = data.Corpus(args.data)
+if torch.cuda.is_available():
+    corpus = data.Corpus(args.data, True)
+else:
+    corpus = data.Corpus(args.data)
 
 # Starting from sequential data, batchify arranges the dataset into columns.
 # For instance, with the alphabet as the sequence and batch size 4, we'd get
@@ -85,6 +88,8 @@ test_data = batchify(corpus.test, eval_batch_size)
 
 ntokens = len(corpus.dictionary)
 model = model.RNNModel(args.model, ntokens, args.emsize, args.nhid, args.nlayers, args.dropout, args.tied)
+if torch.cuda.is_available():
+    model.cuda()
 criterion = nn.CrossEntropyLoss()
 
 ###############################################################################
