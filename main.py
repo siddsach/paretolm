@@ -14,9 +14,9 @@ parser.add_argument('--data', type=str, default='./data/ptb',
                     help='location of the data corpus')
 parser.add_argument('--model', type=str, default='LSTM',
                     help='type of recurrent net (RNN_TANH, RNN_RELU, LSTM, GRU)')
-parser.add_argument('--emsize', type=int, default=400,
+parser.add_argument('--emsize', type=int, default=300,
                     help='size of word embeddings')
-parser.add_argument('--nhid', type=int, default=400,
+parser.add_argument('--nhid', type=int, default=300,
                     help='number of hidden units per layer')
 parser.add_argument('--nlayers', type=int, default=1,
                     help='number of layers')
@@ -36,7 +36,7 @@ parser.add_argument('--rnn_dropout', type=float, default=0.1,
                     help='dropout applied to rnn layers(0 = no dropout)')
 parser.add_argument('--output_dropout', type=float, default=0.2,
                     help='dropout applied to last hidden')
-parser.add_argument('--optim', type=str, default='adam',
+parser.add_argument('--optim', type=str, default='rms',
                     help='optimizer to use')
 parser.add_argument('--adasoft', type=bool, default=True,
                     help='Whether to use Adaptive Softmax (update of Hierarchical Softmax)')
@@ -102,8 +102,8 @@ if torch.cuda.is_available():
 
 if args.optim == 'SGD':
     optimizer = torch.optim.SGD(params = model.parameters(), lr = args.lr)
-elif args.optim == 'adam':
-    optimizer = torch.optim.RMSprop(params = model.parameters(), lr = args.lr, weight_decay = 0.000001)
+elif args.optim == 'rms':
+    optimizer = torch.optim.RMSprop(params = model.parameters(), lr = args.lr, weight_decay = 0.00001)
 else:
     raise Exception
 
@@ -153,6 +153,7 @@ def evaluate(data_source):
     total_loss = 0
     ntokens = len(corpus.dictionary)
     hidden = model.init_hidden(eval_batch_size)
+    print(data_source.size(0))
     for i in range(0, data_source.size(0) - 1, args.bptt):
         data, targets = get_batch(data_source, i, evaluation=True)
         output, hidden = model(data, hidden)
