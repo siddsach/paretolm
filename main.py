@@ -6,9 +6,12 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import os
+from adasoft import *
 
 import data
 import model
+
+adasoft = True
 
 parser = argparse.ArgumentParser(description='PTB RNN/LSTM Language Model: Main Function')
 parser.add_argument('--data', type=str, default='./data/ptb',
@@ -87,10 +90,16 @@ test_data = batchify(corpus.test, eval_batch_size)
 ###############################################################################
 
 ntokens = len(corpus.dictionary)
-model = model.RNNModel(args.model, ntokens, args.emsize, args.nhid, args.nlayers, args.dropout, args.tied)
+model = model.RNNModel(args.model, ntokens, args.emsize, args.nhid, args.nlayers, args.dropout, args.tied, adasoft=adasoft)
 if torch.cuda.is_available():
     model.cuda()
-criterion = nn.CrossEntropyLoss()
+
+criterion = None
+if adasoft:
+    criterion = AdaptiveLoss([2000, 10000, ntokens + 1])
+
+else:
+    criterion = nn.CrossEntropyLoss()
 
 ###############################################################################
 # Training code
@@ -149,8 +158,10 @@ def train():
         # If we didn't, the model would try backpropagating all the way to start of the dataset.
         hidden = repackage_hidden(hidden)
         model.zero_grad()
-        output, hidden = model(data, hidden)
-        loss = criterion(output.view(-1, ntokens), targets)
+        output, hidden = model(data, hidden, targets)
+        if not adasoft:
+            output = output.view(-1, ntokens)
+        loss = criterion(output, targets)
         loss.backward()
 
         # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
