@@ -94,7 +94,7 @@ test_data = batchify(corpus.test, eval_batch_size)
 ###############################################################################
 
 ntokens = len(corpus.dictionary)
-cutoff = [500]
+cutoff = [2000]
 model = RNNModel(args.model, ntokens, args.emsize, args.nhid, args.nlayers, args.dropout, args.rnn_dropout, args.output_dropout, args.tied, adasoft=args.adasoft, cutoff=cutoff)
 
 if torch.cuda.is_available():
@@ -103,7 +103,7 @@ if torch.cuda.is_available():
 if args.optim == 'SGD':
     optimizer = torch.optim.SGD(params = model.parameters(), lr = args.lr)
 elif args.optim == 'adam':
-    optimizer = torch.optim.RMSprop(params = model.parameters(), lr = args.lr, weight_decay = 0.00001)
+    optimizer = torch.optim.RMSprop(params = model.parameters(), lr = args.lr, weight_decay = 0.000005)
 else:
     raise Exception
 
