@@ -199,7 +199,7 @@ def train():
                 elapsed * 1000 / args.log_interval, cur_loss, math.exp(cur_loss)))
             total_loss = 0
             #start_time = time.time()
-    print('elapsed:{}'.format(time.time()-start_time))
+            print('elapsed:{}'.format(time.time()-start_time))
 
 # Loop over epochs.
 lr = args.lr
