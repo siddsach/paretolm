@@ -11,8 +11,6 @@ from adasoft import *
 import data
 import model
 
-adasoft = True
-
 parser = argparse.ArgumentParser(description='PTB RNN/LSTM Language Model: Main Function')
 parser.add_argument('--data', type=str, default='./data/ptb',
                     help='location of the data corpus')
@@ -37,7 +35,9 @@ parser.add_argument('--bptt', type=int, default=35,
 parser.add_argument('--dropout', type=float, default=0.2,
                     help='dropout applied to layers (0 = no dropout)')
 parser.add_argument('--optim', type=str, default='adam',
-                    help='dropout applied to layers (0 = no dropout)')
+                    help='optimizer to use')
+parser.add_argument('--adasoft', type=bool, default=False,
+                    help='Whether to use Adaptive Softmax (update of Hierarchical Softmax)')
 parser.add_argument('--tied', action='store_true',
                     help='tie the word embedding and softmax weights')
 parser.add_argument('--seed', type=int, default=1111,
@@ -93,7 +93,7 @@ test_data = batchify(corpus.test, eval_batch_size)
 
 ntokens = len(corpus.dictionary)
 cutoff = [2000]
-model = model.RNNModel(args.model, ntokens, args.emsize, args.nhid, args.nlayers, args.dropout, args.tied, adasoft=adasoft, cutoff=cutoff)
+model = model.RNNModel(args.model, ntokens, args.emsize, args.nhid, args.nlayers, args.dropout, args.tied, adasoft=args.adasoft, cutoff=cutoff)
 
 if torch.cuda.is_available():
     model.cuda()
@@ -106,9 +106,8 @@ else:
     raise Exception
 
 criterion = None
-if adasoft:
+if args.adasoft:
     criterion = AdaptiveLoss([*cutoff, ntokens + 1])
-
 else:
     criterion = nn.CrossEntropyLoss()
 
@@ -143,10 +142,10 @@ def get_batch(source, i, evaluation=False):
 
 def evaluate(data_source):
     # Turn on evaluation mode which disables dropout.
-    if adasoft:
-        criterion = nn.NLLLoss(size_average=False)
+    if args.adasoft:
+        criterion = nn.NLLLoss()
     else:
-        criterion = nn.CrossEntropyLoss(size_average=False)
+        criterion = nn.CrossEntropyLoss()
 
     model.eval()
     total_loss = 0
@@ -154,7 +153,7 @@ def evaluate(data_source):
     hidden = model.init_hidden(eval_batch_size)
     for i in range(0, data_source.size(0) - 1, args.bptt):
         data, targets = get_batch(data_source, i, evaluation=True)
-        output, hidden = model(data, hidden, training=False)
+        output, hidden = model(data, hidden)
         output_flat = output.view(-1, ntokens)
         total_loss += len(data) * criterion(output_flat, targets).data
         hidden = repackage_hidden(hidden)
@@ -177,7 +176,7 @@ def train():
         hidden = repackage_hidden(hidden)
         model.zero_grad()
         output, hidden = model(data, hidden, targets)
-        if not adasoft:
+        if not args.adasoft:
             output = output.view(-1, ntokens)
         loss = criterion(output, targets)
         loss.backward()
@@ -208,6 +207,7 @@ try:
     for epoch in range(1, args.epochs+1):
         epoch_start_time = time.time()
         train()
+        print(criterion)
         val_loss = evaluate(val_data)
         print('-' * 89)
         print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '

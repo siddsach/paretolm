@@ -51,12 +51,10 @@ class RNNModel(nn.Module):
             self.decoder.bias.data.fill_(0)
         self.encoder.weight.data.uniform_(-initrange, initrange)
 
-    def forward(self, input, hidden, target=None, training=True):
+    def forward(self, input, hidden, target=None):
         emb = self.drop(self.encoder(input))
         output, hidden = self.rnn(emb, hidden)
         output = self.drop(output)
-        if self.adasoft:
-            self.decoder.set_target(target.data)
 
         if not self.adasoft:
             decoded = self.decoder(output
@@ -64,12 +62,14 @@ class RNNModel(nn.Module):
             decoded = decoded.view(output.size(0), output.size(1), decoded.size(1))
 
         else:
-            if training:
+            if target is not None:
+                self.decoder.set_target(target.data)
                 decoded = self.decoder(output
                         .view(output.size(0) * output.size(1), output.size(2)))
             else:
                 decoded = self.decoder.log_prob(output
                         .view(output.size(0) * output.size(1), output.size(2)))
+                decoded = Variable(decoded)
 
         return decoded, hidden
 
