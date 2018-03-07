@@ -36,6 +36,8 @@ parser.add_argument('--bptt', type=int, default=35,
                     help='sequence length')
 parser.add_argument('--dropout', type=float, default=0.2,
                     help='dropout applied to layers (0 = no dropout)')
+parser.add_argument('--optim', type=str, default='adam',
+                    help='dropout applied to layers (0 = no dropout)')
 parser.add_argument('--tied', action='store_true',
                     help='tie the word embedding and softmax weights')
 parser.add_argument('--seed', type=int, default=1111,
@@ -90,13 +92,22 @@ test_data = batchify(corpus.test, eval_batch_size)
 ###############################################################################
 
 ntokens = len(corpus.dictionary)
-model = model.RNNModel(args.model, ntokens, args.emsize, args.nhid, args.nlayers, args.dropout, args.tied, adasoft=adasoft)
+cutoff = [2000]
+model = model.RNNModel(args.model, ntokens, args.emsize, args.nhid, args.nlayers, args.dropout, args.tied, adasoft=adasoft, cutoff=cutoff)
+
 if torch.cuda.is_available():
     model.cuda()
 
+if args.optim == 'SGD':
+    optimizer = torch.optim.SGD(params = model.parameters(), lr = args.lr)
+elif args.optim == 'adam':
+    optimizer = torch.optim.Adam(params = model.parameters())
+else:
+    raise Exception
+
 criterion = None
 if adasoft:
-    criterion = AdaptiveLoss([2000, 10000, ntokens + 1])
+    criterion = AdaptiveLoss([*cutoff, ntokens + 1])
 
 else:
     criterion = nn.CrossEntropyLoss()
@@ -138,7 +149,7 @@ def evaluate(data_source):
     hidden = model.init_hidden(eval_batch_size)
     for i in range(0, data_source.size(0) - 1, args.bptt):
         data, targets = get_batch(data_source, i, evaluation=True)
-        output, hidden = model(data, hidden)
+        output, hidden = model(data, hidden, training=False)
         output_flat = output.view(-1, ntokens)
         total_loss += len(data) * criterion(output_flat, targets).data
         hidden = repackage_hidden(hidden)
@@ -147,6 +158,8 @@ def evaluate(data_source):
 
 def train():
     # Turn on training mode which enables dropout.
+    print('Starting train step...')
+
     model.train()
     total_loss = 0
     start_time = time.time()
@@ -166,8 +179,7 @@ def train():
 
         # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
         torch.nn.utils.clip_grad_norm(model.parameters(), args.clip)
-        for p in model.parameters():
-            p.data.add_(-lr, p.grad.data)
+        optimizer.step()
 
         total_loss += loss.data
 
@@ -179,7 +191,8 @@ def train():
                 epoch, batch, len(train_data) // args.bptt, lr,
                 elapsed * 1000 / args.log_interval, cur_loss, math.exp(cur_loss)))
             total_loss = 0
-            start_time = time.time()
+            #start_time = time.time()
+    print('elapsed:{}'.format(time.time()-start_time))
 
 # Loop over epochs.
 lr = args.lr

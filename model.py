@@ -24,7 +24,7 @@ class RNNModel(nn.Module):
         if adasoft:
             self.decoder = AdaptiveSoftmax(nhid, [*cutoff, ntoken + 1])
         else:
-            self.decoder = nn.Linear(nhid, ntoken + 1)
+            self.decoder = nn.Linear(nhid, ntoken)
 
         # Optionally tie weights as in:
         # "Using the Output Embedding to Improve Language Models" (Press & Wolf 2016)
@@ -47,8 +47,8 @@ class RNNModel(nn.Module):
         initrange = 0.1
         self.encoder.weight.data.uniform_(-initrange, initrange)
         if not self.adasoft:
-            nn.init.xavier_normal(self.linear.weight)
-            self.linear.bias.data.fill_(0)
+            nn.init.xavier_normal(self.decoder.weight)
+            self.decoder.bias.data.fill_(0)
         self.encoder.weight.data.uniform_(-initrange, initrange)
 
     def forward(self, input, hidden, target=None, training=True):
@@ -58,10 +58,19 @@ class RNNModel(nn.Module):
         if self.adasoft:
             self.decoder.set_target(target.data)
 
-        decoded = self.decoder(output
-                .view(output.size(0) * output.size(1), output.size(2)))
         if not self.adasoft:
+            decoded = self.decoder(output
+                    .view(output.size(0) * output.size(1), output.size(2)))
             decoded = decoded.view(output.size(0), output.size(1), decoded.size(1))
+
+        else:
+            if training:
+                decoded = self.decoder(output
+                        .view(output.size(0) * output.size(1), output.size(2)))
+            else:
+                decoded = self.decoder.log_prob(output
+                        .view(output.size(0) * output.size(1), output.size(2)))
+
         return decoded, hidden
 
     def init_hidden(self, bsz):
@@ -72,10 +81,3 @@ class RNNModel(nn.Module):
         else:
             return Variable(weight.new(self.nlayers, bsz, self.nhid).zero_())
 
-    def log_prob(self, input, hidden, target):
-        embed = self.encoder(input)
-        output, hidden = self.rnn(embed, hidden)
-        decoded = self.decoder.log_prob(output.contiguous() \
-                .view(output.size(0) * output.size(1), output.size(2)))
-
-        return decoded, hidden
