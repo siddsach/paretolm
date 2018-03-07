@@ -14,9 +14,9 @@ parser.add_argument('--data', type=str, default='./data/ptb',
                     help='location of the data corpus')
 parser.add_argument('--model', type=str, default='LSTM',
                     help='type of recurrent net (RNN_TANH, RNN_RELU, LSTM, GRU)')
-parser.add_argument('--emsize', type=int, default=500,
+parser.add_argument('--emsize', type=int, default=400,
                     help='size of word embeddings')
-parser.add_argument('--nhid', type=int, default=500,
+parser.add_argument('--nhid', type=int, default=400,
                     help='number of hidden units per layer')
 parser.add_argument('--nlayers', type=int, default=1,
                     help='number of layers')
@@ -103,7 +103,7 @@ if torch.cuda.is_available():
 if args.optim == 'SGD':
     optimizer = torch.optim.SGD(params = model.parameters(), lr = args.lr)
 elif args.optim == 'adam':
-    optimizer = torch.optim.RMSprop(params = model.parameters(), lr = args.lr, weight_decay = 0.000005)
+    optimizer = torch.optim.RMSprop(params = model.parameters(), lr = args.lr, weight_decay = 0.000001)
 else:
     raise Exception
 
