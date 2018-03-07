@@ -6,23 +6,21 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import os
-from adasoft import *
-
 import data
-import model
+from model import RNNModel, AdaptiveLoss
 
 parser = argparse.ArgumentParser(description='PTB RNN/LSTM Language Model: Main Function')
 parser.add_argument('--data', type=str, default='./data/ptb',
                     help='location of the data corpus')
 parser.add_argument('--model', type=str, default='LSTM',
                     help='type of recurrent net (RNN_TANH, RNN_RELU, LSTM, GRU)')
-parser.add_argument('--emsize', type=int, default=200,
+parser.add_argument('--emsize', type=int, default=500,
                     help='size of word embeddings')
-parser.add_argument('--nhid', type=int, default=200,
+parser.add_argument('--nhid', type=int, default=500,
                     help='number of hidden units per layer')
-parser.add_argument('--nlayers', type=int, default=2,
+parser.add_argument('--nlayers', type=int, default=1,
                     help='number of layers')
-parser.add_argument('--lr', type=float, default=40,
+parser.add_argument('--lr', type=float, default=0.005,
                     help='initial learning rate')
 parser.add_argument('--clip', type=float, default=0.25,
                     help='gradient clipping')
@@ -32,11 +30,15 @@ parser.add_argument('--batch_size', type=int, default=40, metavar='N',
                     help='batch size')
 parser.add_argument('--bptt', type=int, default=35,
                     help='sequence length')
-parser.add_argument('--dropout', type=float, default=0.2,
-                    help='dropout applied to layers (0 = no dropout)')
+parser.add_argument('--dropout', type=float, default=0.3,
+                    help='dropout applied to embedding (0 = no dropout)')
+parser.add_argument('--rnn_dropout', type=float, default=0.1,
+                    help='dropout applied to rnn layers(0 = no dropout)')
+parser.add_argument('--output_dropout', type=float, default=0.2,
+                    help='dropout applied to last hidden')
 parser.add_argument('--optim', type=str, default='adam',
                     help='optimizer to use')
-parser.add_argument('--adasoft', type=bool, default=False,
+parser.add_argument('--adasoft', type=bool, default=True,
                     help='Whether to use Adaptive Softmax (update of Hierarchical Softmax)')
 parser.add_argument('--tied', action='store_true',
                     help='tie the word embedding and softmax weights')
@@ -92,8 +94,8 @@ test_data = batchify(corpus.test, eval_batch_size)
 ###############################################################################
 
 ntokens = len(corpus.dictionary)
-cutoff = [2000]
-model = model.RNNModel(args.model, ntokens, args.emsize, args.nhid, args.nlayers, args.dropout, args.tied, adasoft=args.adasoft, cutoff=cutoff)
+cutoff = [500]
+model = RNNModel(args.model, ntokens, args.emsize, args.nhid, args.nlayers, args.dropout, args.rnn_dropout, args.output_dropout, args.tied, adasoft=args.adasoft, cutoff=cutoff)
 
 if torch.cuda.is_available():
     model.cuda()
@@ -101,7 +103,7 @@ if torch.cuda.is_available():
 if args.optim == 'SGD':
     optimizer = torch.optim.SGD(params = model.parameters(), lr = args.lr)
 elif args.optim == 'adam':
-    optimizer = torch.optim.Adam(params = model.parameters())
+    optimizer = torch.optim.RMSprop(params = model.parameters(), lr = args.lr, weight_decay = 0.00001)
 else:
     raise Exception
 
@@ -192,7 +194,7 @@ def train():
             elapsed = time.time() - start_time
             print('| epoch {:3d} | {:5d}/{:5d} batches | lr {:02.2f} | ms/batch {:5.2f} | '
                     'loss {:5.2f} | perplexity {:8.2f}'.format(
-                epoch, batch, len(train_data) // args.bptt, lr,
+                epoch, batch, len(train_data) // args.bptt, args.lr,
                 elapsed * 1000 / args.log_interval, cur_loss, math.exp(cur_loss)))
             total_loss = 0
             #start_time = time.time()
@@ -238,3 +240,6 @@ print('=' * 89)
 print('| End of training | test loss {:5.2f} | test perplexity {:8.2f}'.format(
     test_loss, math.exp(test_loss)))
 print('=' * 89)
+print(args.dropout)
+print(args.rnn_dropout)
+print(args.output_dropout)
