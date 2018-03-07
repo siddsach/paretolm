@@ -143,6 +143,11 @@ def get_batch(source, i, evaluation=False):
 
 def evaluate(data_source):
     # Turn on evaluation mode which disables dropout.
+    if adasoft:
+        criterion = nn.NLLLoss(size_average=False)
+    else:
+        criterion = nn.CrossEntropyLoss(size_average=False)
+
     model.eval()
     total_loss = 0
     ntokens = len(corpus.dictionary)
