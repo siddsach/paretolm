@@ -107,7 +107,9 @@ class AdaptiveSoftmax(nn.Module):
 
             self.tail.append(seq)
 
-        self.lsm = nn.LogSoftmax().cuda()
+        self.lsm = nn.LogSoftmax()
+        if torch.cuda.is_available():
+            self.lsm.cuda()
 
     def reset(self):
         std = 0.1
@@ -150,7 +152,9 @@ class AdaptiveSoftmax(nn.Module):
         head_out = self.head(input)
 
         batch_size = head_out.size(0)
-        prob = torch.zeros(batch_size, self.cutoff[-1]).cuda()
+        prob = torch.zeros(batch_size, self.cutoff[-1])
+        if torch.cuda.is_available():
+            prob.cuda()
 
         lsm_head = self.lsm(head_out)
         prob.narrow(1, 0, self.output_size).add_(lsm_head.narrow(1, 0, self.output_size).data)

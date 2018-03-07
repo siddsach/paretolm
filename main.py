@@ -14,9 +14,9 @@ parser.add_argument('--data', type=str, default='./data/ptb',
                     help='location of the data corpus')
 parser.add_argument('--model', type=str, default='LSTM',
                     help='type of recurrent net (RNN_TANH, RNN_RELU, LSTM, GRU)')
-parser.add_argument('--emsize', type=int, default=400,
+parser.add_argument('--emsize', type=int, default=300,
                     help='size of word embeddings')
-parser.add_argument('--nhid', type=int, default=400,
+parser.add_argument('--nhid', type=int, default=300,
                     help='number of hidden units per layer')
 parser.add_argument('--nlayers', type=int, default=1,
                     help='number of layers')
@@ -198,7 +198,7 @@ def train():
                 elapsed * 1000 / args.log_interval, cur_loss, math.exp(cur_loss)))
             total_loss = 0
             #start_time = time.time()
-    print('elapsed:{}'.format(time.time()-start_time))
+            print('elapsed:{}'.format(time.time()-start_time))
 
 # Loop over epochs.
 lr = args.lr
